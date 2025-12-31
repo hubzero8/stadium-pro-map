@@ -19,9 +19,13 @@
         body { margin: 0; display: flex; font-family: system-ui, -apple-system, sans-serif; height: 100vh; background: var(--bg); overflow: hidden; }
         
         #sidebar { width: 380px; background: white; border-left: 1px solid #ddd; display: flex; flex-direction: column; z-index: 1001; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
-        .sidebar-header { background: var(--dark); color: white; padding: 25px 20px; text-align: center; }
+        .sidebar-header { background: var(--dark); color: white; padding: 25px 20px; text-align: center; position: relative; }
         .sidebar-header h2 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; }
         
+        /* כפתור יצירת קשר אנונימי */
+        .contact-trigger { position: absolute; left: 15px; top: 25px; color: #94a3b8; cursor: pointer; font-size: 1.2rem; transition: 0.3s; }
+        .contact-trigger:hover { color: white; }
+
         .search-box { padding: 15px; border-bottom: 1px solid #eee; background: white; }
         #search { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 12px; box-sizing: border-box; transition: 0.3s; }
         #search:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
@@ -35,7 +39,7 @@
         
         #map { flex: 1; }
         
-        .popup-card { width: 320px; direction: rtl; }
+        .popup-card { width: 310px; direction: rtl; }
         .popup-header { background: var(--dark); color: white; padding: 12px; border-radius: 12px 12px 0 0; text-align: center; margin: -14px -14px 12px -14px; font-weight: bold; }
         
         .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -49,8 +53,10 @@
         .stadium-svg { width: 100%; height: auto; }
         
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
-        .choice-modal { background: white; padding: 25px; border-radius: 20px; width: 340px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .choice-modal { background: white; padding: 25px; border-radius: 20px; width: 320px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; }
         
+        .contact-link { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 15px; background: var(--primary); color: white; border-radius: 12px; text-decoration: none; font-weight: bold; margin-top: 15px; }
+
         @media (max-width: 768px) {
             body { flex-direction: column-reverse; }
             #sidebar { width: 100%; height: 40vh; border-left: none; border-top: 1px solid #ddd; }
@@ -61,7 +67,10 @@
 <body>
 
 <div id="sidebar">
-    <div class="sidebar-header"><h2>StadiumPRO</h2></div>
+    <div class="sidebar-header">
+        <i class="fa-solid fa-circle-question contact-trigger" onclick="openContact()"></i>
+        <h2>StadiumPRO</h2>
+    </div>
     <div class="search-box"><input type="text" id="search" placeholder="חפש אצטדיון או קבוצה..." oninput="renderList()"></div>
     <div id="list"></div>
 </div>
@@ -69,8 +78,19 @@
 
 <div id="overlay" class="overlay" onclick="this.style.display='none'">
     <div class="choice-modal" onclick="event.stopPropagation()">
-        <h3 id="choice-title" style="text-align:center; margin-top:0; color:var(--dark);"></h3>
+        <h3 id="choice-title" style="margin-top:0; color:var(--dark);"></h3>
         <div id="choice-list"></div>
+    </div>
+</div>
+
+<div id="contact-overlay" class="overlay" onclick="this.style.display='none'">
+    <div class="choice-modal" onclick="event.stopPropagation()">
+        <h3 style="margin-top:0; color:var(--dark);">דיווח או הצעה</h3>
+        <p style="font-size:0.9rem; color:#64748b;">מצאתם טעות? רוצים להוסיף מסעדה מומלצת ליד המגרש? שלחו לנו מייל!</p>
+        <a href="mailto:galactico2818@gmail.com?subject=StadiumPRO Feedback" class="contact-link">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span>שלח מייל למפתח</span>
+        </a>
     </div>
 </div>
 
@@ -80,144 +100,21 @@
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
 
     var stadiums = [
-        { 
-            id: 1, name: "סמי עופר", teams: "מכבי חיפה, הפועל חיפה", coords: [32.7833, 34.9667], 
-            parking: [{n: "חניון P5", c: [32.7805, 34.9625]}], 
-            food: [
-                {n: "בורגר סאלון (באצטדיון)", c: [32.7825, 34.9655]},
-                {n: "רפאלו (איטלקי)", c: [32.7835, 34.9658]},
-                {n: "סטקיית הבוקרים", c: [32.7850, 34.9620]}
-            ] 
-        },
-        { 
-            id: 2, name: "טדי", teams: "בית\"ר י-ם, הפועל י-ם", coords: [31.7511, 35.1906], 
-            parking: [{n: "קניון מלחה", c: [31.7515, 35.1865]}], 
-            food: [
-                {n: "שיפודי ציפורה (מלחה)", c: [31.7512, 35.1872]},
-                {n: "בורגרים מלחה", c: [31.7518, 35.1880]},
-                {n: "קפה תמרה (הגן הטכנולוגי)", c: [31.7540, 35.1895]}
-            ] 
-        },
-        { 
-            id: 3, name: "בלומפילד", teams: "מכבי ת\"א, הפועל ת\"א", coords: [32.0517, 34.7615], 
-            parking: [{n: "חניון התחנה", c: [32.0592, 34.7617]}], 
-            food: [
-                {n: "מפגש בלומפילד", c: [32.0526, 34.7625]},
-                {n: "חומוס אבו חסן", c: [32.0520, 34.7540]},
-                {n: "סושי פו", c: [32.0550, 34.7630]}
-            ] 
-        },
-        { 
-            id: 4, name: "טרנר", teams: "הפועל ב\"ש", coords: [31.2731, 34.7793], 
-            parking: [{n: "הקונכייה", c: [31.2720, 34.7770]}], 
-            food: [
-                {n: "Vivino (ויוינו)", c: [31.2660, 34.7955]},
-                {n: "נאפיס באר שבע", c: [31.2680, 34.7980]},
-                {n: "המבורגרייה (Agadir)", c: [31.2650, 34.7960]}
-            ] 
-        },
-        { 
-            id: 5, name: "נתניה", teams: "מכבי נתניה", coords: [32.2943, 34.8645], 
-            parking: [{n: "חניון מזרחי", c: [32.2950, 34.8660]}], 
-            food: [
-                {n: "נישי (Nishi)", c: [32.2780, 34.8450]},
-                {n: "בורגרים (מתחם האצטדיון)", c: [32.2940, 34.8640]},
-                {n: "פאט ויני", c: [32.2810, 34.8580]}
-            ] 
-        },
-        { 
-            id: 6, name: "המושבה", teams: "מכבי והפועל פ\"ת", coords: [32.1041, 34.8650], 
-            parking: [{n: "חניון הרכבת", c: [32.1025, 34.8665]}], 
-            food: [
-                {n: "אלפרדו פ\"ת", c: [32.1120, 34.8690]},
-                {n: "נונו מימי", c: [32.1110, 34.8650]},
-                {n: "אגאדיר פ\"ת", c: [32.1130, 34.8700]}
-            ] 
-        },
-        { 
-            id: 7, name: "דוחא", teams: "בני סכנין", coords: [32.8666, 35.3108], 
-            parking: [{n: "חניה סמוכה", c: [32.8650, 35.3110]}], 
-            food: [
-                {n: "מסעדת מדמס", c: [32.8645, 35.3105]},
-                {n: "מסעדת דובאי", c: [32.8630, 35.3090]},
-                {n: "קפה גרין", c: [32.8620, 35.3080]}
-            ] 
-        },
-        { 
-            id: 8, name: "הי\"א", teams: "מ.ס. אשדוד", coords: [31.8102, 34.6483], 
-            parking: [{n: "חניון החוף", c: [31.8120, 34.6450]}], 
-            food: [
-                {n: "שניצלהיט", c: [31.8135, 34.6495]},
-                {n: "פטרה (חוף הקשתות)", c: [31.8080, 34.6380]},
-                {n: "גמברינוס", c: [31.8030, 34.6520]}
-            ] 
-        },
-        { 
-            id: 9, name: "גרין", teams: "בני ריינה", coords: [32.6899, 35.3113], 
-            parking: [{n: "חניון המגרש", c: [32.6910, 35.3100]}], 
-            food: [
-                {n: "סילביס", c: [32.6940, 35.3040]},
-                {n: "רפאלו נוף הגליל", c: [32.6980, 35.3200]},
-                {n: "תשרין 2", c: [32.6990, 35.3150]}
-            ] 
-        }
+        { id: 1, name: "סמי עופר", teams: "מכבי חיפה, הפועל חיפה", coords: [32.7833, 34.9667], parking: [{n: "חניון P5", c: [32.7805, 34.9625]}], food: [{n: "בורגר סאלון", c: [32.7825, 34.9655]}, {n: "רפאלו", c: [32.7835, 34.9658]}, {n: "סטקיית הבוקרים", c: [32.7850, 34.9620]}] },
+        { id: 2, name: "טדי", teams: "בית\"ר י-ם, הפועל י-ם", coords: [31.7511, 35.1906], parking: [{n: "קניון מלחה", c: [31.7515, 35.1865]}], food: [{n: "שיפודי ציפורה", c: [31.7512, 35.1872]}, {n: "בורגרים מלחה", c: [31.7518, 35.1880]}, {n: "קפה תמרה", c: [31.7540, 35.1895]}] },
+        { id: 3, name: "בלומפילד", teams: "מכבי ת\"א, הפועל ת\"א", coords: [32.0517, 34.7615], parking: [{n: "חניון התחנה", c: [32.0592, 34.7617]}], food: [{n: "מפגש בלומפילד", c: [32.0526, 34.7625]}, {n: "חומוס אבו חסן", c: [32.0520, 34.7540]}, {n: "סושי פו", c: [32.0550, 34.7630]}] },
+        { id: 4, name: "טרנר", teams: "הפועל ב\"ש", coords: [31.2731, 34.7793], parking: [{n: "הקונכייה", c: [31.2720, 34.7770]}], food: [{n: "Vivino", c: [31.2660, 34.7955]}, {n: "נאפיס", c: [31.2680, 34.7980]}, {n: "אגאדיר", c: [31.2650, 34.7960]}] },
+        { id: 5, name: "נתניה", teams: "מכבי נתניה", coords: [32.2943, 34.8645], parking: [{n: "חניון מזרחי", c: [32.2950, 34.8660]}], food: [{n: "נישי", c: [32.2780, 34.8450]}, {n: "בורגרים", c: [32.2940, 34.8640]}, {n: "פאט ויני", c: [32.2810, 34.8580]}] },
+        { id: 6, name: "המושבה", teams: "מכבי והפועל פ\"ת", coords: [32.1041, 34.8650], parking: [{n: "חניון הרכבת", c: [32.1025, 34.8665]}], food: [{n: "אלפרדו", c: [32.1120, 34.8690]}, {n: "נונו מימי", c: [32.1110, 34.8650]}, {n: "אגאדיר", c: [32.1130, 34.8700]}] },
+        { id: 7, name: "דוחא", teams: "בני סכנין", coords: [32.8666, 35.3108], parking: [{n: "חניה סמוכה", c: [32.8650, 35.3110]}], food: [{n: "מדמס", c: [32.8645, 35.3105]}, {n: "דובאי", c: [32.8630, 35.3090]}, {n: "קפה גרין", c: [32.8620, 35.3080]}] },
+        { id: 8, name: "הי\"א", teams: "מ.ס. אשדוד", coords: [31.8102, 34.6483], parking: [{n: "חניון החוף", c: [31.8120, 34.6450]}], food: [{n: "שניצלהיט", c: [31.8135, 34.6495]}, {n: "פטרה", c: [31.8080, 34.6380]}, {n: "גמברינוס", c: [31.8030, 34.6520]}] },
+        { id: 9, name: "גרין", teams: "בני ריינה", coords: [32.6899, 35.3113], parking: [{n: "חניון המגרש", c: [32.6910, 35.3100]}], food: [{n: "סילביס", c: [32.6940, 35.3040]}, {n: "רפאלו נוף הגליל", c: [32.6980, 35.3200]}, {n: "תשרין 2", c: [32.6990, 35.3150]}] }
     ];
 
     const stadiumMaps = {
-        "סמי עופר": `<svg viewBox="0 0 200 160" class="stadium-svg">
-            <rect x="50" y="50" width="100" height="60" fill="#065f46"/>
-            <rect x="50" y="25" width="100" height="25" stroke="orange" fill="none" stroke-width="2"/><text x="100" y="42" fill="white" font-size="8" text-anchor="middle">צפוני (201-212)</text>
-            <rect x="50" y="110" width="100" height="25" stroke="white" fill="none" stroke-width="2"/><text x="100" y="127" fill="white" font-size="8" text-anchor="middle">דרומי (אורחים)</text>
-            <rect x="25" y="25" width="25" height="110" stroke="red" fill="none" stroke-width="2"/><text x="38" y="80" fill="white" font-size="7" transform="rotate(-90 38,80)" text-anchor="middle">מערבי (VIP/משפחות)</text>
-            <rect x="150" y="25" width="25" height="110" stroke="blue" fill="none" stroke-width="2"/><text x="163" y="80" fill="white" font-size="7" transform="rotate(90 163,80)" text-anchor="middle">מזרחי (111-125)</text>
-        </svg>`,
-        "טדי": `<svg viewBox="0 0 200 160" class="stadium-svg">
-            <rect x="60" y="60" width="80" height="40" fill="#065f46"/>
-            <rect x="60" y="30" width="80" height="30" stroke="orange" fill="none" stroke-width="2"/><text x="100" y="50" fill="white" font-size="8" text-anchor="middle">צפוני (11-14)</text>
-            <rect x="60" y="100" width="80" height="30" stroke="white" fill="none" stroke-width="2"/><text x="100" y="120" fill="white" font-size="8" text-anchor="middle">דרומי (אורחים)</text>
-            <rect x="30" y="30" width="30" height="100" stroke="red" fill="none" stroke-width="2"/><text x="45" y="80" fill="white" font-size="8" transform="rotate(-90 45,80)" text-anchor="middle">מערבי</text>
-            <rect x="140" y="30" width="30" height="100" stroke="blue" fill="none" stroke-width="2"/><text x="155" y="80" fill="white" font-size="8" transform="rotate(90 155,80)" text-anchor="middle">מזרחי</text>
-        </svg>`,
-        "בלומפילד": `<svg viewBox="0 0 200 160" class="stadium-svg">
-            <rect x="55" y="55" width="90" height="50" fill="#065f46"/>
-            <rect x="55" y="25" width="90" height="30" stroke="orange" fill="none" stroke-width="2"/><text x="100" y="45" fill="white" font-size="8" text-anchor="middle">צפוני (10-11)</text>
-            <rect x="55" y="105" width="90" height="30" stroke="white" fill="none" stroke-width="2"/><text x="100" y="125" fill="white" font-size="8" text-anchor="middle">דרומי (4-5 אורחים)</text>
-            <rect x="25" y="25" width="30" height="110" stroke="red" fill="none" stroke-width="2"/><text x="42" y="80" fill="white" font-size="8" transform="rotate(-90 42,80)" text-anchor="middle">מערבי (1-2)</text>
-            <rect x="145" y="25" width="30" height="110" stroke="blue" fill="none" stroke-width="2"/><text x="162" y="80" fill="white" font-size="8" transform="rotate(90 162,80)" text-anchor="middle">מזרחי (7-8)</text>
-        </svg>`,
-        "טרנר": `<svg viewBox="0 0 200 160" class="stadium-svg">
-            <rect x="55" y="55" width="90" height="50" fill="#065f46"/>
-            <rect x="55" y="25" width="90" height="30" stroke="white" fill="none" stroke-width="2"/><text x="100" y="45" fill="white" font-size="8" text-anchor="middle">צפוני (אורחים)</text>
-            <rect x="55" y="105" width="90" height="30" stroke="red" fill="none" stroke-width="2"/><text x="100" y="125" fill="white" font-size="8" text-anchor="middle">דרומי (עידוד)</text>
-            <rect x="25" y="25" width="30" height="110" stroke="white" fill="none" stroke-width="2"/><text x="42" y="80" fill="white" font-size="8" transform="rotate(-90 42,80)" text-anchor="middle">מערבי</text>
-            <rect x="145" y="25" width="30" height="110" stroke="white" fill="none" stroke-width="2"/><text x="162" y="80" fill="white" font-size="8" transform="rotate(90 162,80)" text-anchor="middle">מזרחי</text>
-        </svg>`,
-        "נתניה": `<svg viewBox="0 0 200 160" class="stadium-svg">
-            <rect x="70" y="30" width="60" height="100" fill="#065f46"/>
-            <rect x="30" y="30" width="40" height="100" stroke="red" fill="none" stroke-width="2"/><text x="50" y="80" fill="white" font-size="9" transform="rotate(-90 50,80)" text-anchor="middle">מערבי</text>
-            <rect x="130" y="30" width="40" height="100" stroke="white" fill="none" stroke-width="2"/><text x="150" y="80" fill="white" font-size="9" transform="rotate(90 150,80)" text-anchor="middle">מזרחי (אורחים)</text>
-        </svg>`,
-        "המושבה": `<svg viewBox="0 0 200 160" class="stadium-svg">
-            <rect x="70" y="30" width="60" height="100" fill="#065f46"/>
-            <rect x="30" y="30" width="40" height="100" stroke="red" fill="none" stroke-width="2"/><text x="50" y="80" fill="white" font-size="9" transform="rotate(-90 50,80)" text-anchor="middle">מערבי (1-10)</text>
-            <rect x="130" y="30" width="40" height="100" stroke="white" fill="none" stroke-width="2"/><text x="150" y="80" fill="white" font-size="9" transform="rotate(90 150,80)" text-anchor="middle">מזרחי (אורחים)</text>
-        </svg>`,
-        "דוחא": `<svg viewBox="0 0 200 160" class="stadium-svg">
-            <rect x="60" y="50" width="80" height="60" fill="#065f46"/>
-            <rect x="20" y="35" width="40" height="90" stroke="red" fill="none" stroke-width="2"/><text x="40" y="80" fill="white" font-size="8" transform="rotate(-90 40,80)" text-anchor="middle">מערבי ראשי</text>
-            <rect x="60" y="110" width="80" height="30" stroke="white" fill="none" stroke-width="2"/><text x="100" y="130" fill="white" font-size="8" text-anchor="middle">דרומי (אורחים)</text>
-            <rect x="60" y="20" width="80" height="30" stroke="blue" fill="none" stroke-width="2"/><text x="100" y="40" fill="white" font-size="8" text-anchor="middle">צפוני</text>
-        </svg>`,
-        "הי\"א": `<svg viewBox="0 0 200 160" class="stadium-svg">
-            <rect x="70" y="50" width="80" height="60" fill="#065f46"/>
-            <rect x="25" y="40" width="45" height="80" stroke="red" fill="none" stroke-width="2"/><text x="48" y="80" fill="white" font-size="9" transform="rotate(-90 48,80)" text-anchor="middle">מערבי</text>
-            <rect x="155" y="60" width="25" height="40" stroke="white" fill="none" stroke-width="2"/><text x="168" y="80" fill="white" font-size="7" transform="rotate(90 168,80)" text-anchor="middle">אורחים</text>
-        </svg>`,
-        "גרין": `<svg viewBox="0 0 200 160" class="stadium-svg">
-            <rect x="60" y="60" width="80" height="40" fill="#065f46"/>
-            <rect x="60" y="30" width="80" height="30" stroke="blue" fill="none" stroke-width="2"/><text x="100" y="50" fill="white" font-size="9" text-anchor="middle">עליון</text>
-            <rect x="60" y="100" width="80" height="30" stroke="white" fill="none" stroke-width="2"/><text x="100" y="120" fill="white" font-size="8" text-anchor="middle">תחתון (אורחים)</text>
-        </svg>`
+        "סמי עופר": `<svg viewBox="0 0 200 160" class="stadium-svg"><rect x="50" y="50" width="100" height="60" fill="#065f46"/><rect x="50" y="25" width="100" height="25" stroke="orange" fill="none" stroke-width="2"/><text x="100" y="42" fill="white" font-size="8" text-anchor="middle">צפוני</text><rect x="50" y="110" width="100" height="25" stroke="white" fill="none" stroke-width="2"/><text x="100" y="127" fill="white" font-size="8" text-anchor="middle">דרומי</text><rect x="25" y="25" width="25" height="110" stroke="red" fill="none" stroke-width="2"/><text x="38" y="80" fill="white" font-size="7" transform="rotate(-90 38,80)" text-anchor="middle">מערבי</text><rect x="150" y="25" width="25" height="110" stroke="blue" fill="none" stroke-width="2"/><text x="163" y="80" fill="white" font-size="7" transform="rotate(90 163,80)" text-anchor="middle">מזרחי</text></svg>`,
+        "טדי": `<svg viewBox="0 0 200 160" class="stadium-svg"><rect x="60" y="60" width="80" height="40" fill="#065f46"/><rect x="60" y="30" width="80" height="30" stroke="orange" fill="none" stroke-width="2"/><text x="100" y="50" fill="white" font-size="8" text-anchor="middle">צפוני</text><rect x="60" y="100" width="80" height="30" stroke="white" fill="none" stroke-width="2"/><text x="100" y="120" fill="white" font-size="8" text-anchor="middle">דרומי</text><rect x="30" y="30" width="30" height="100" stroke="red" fill="none" stroke-width="2"/><text x="45" y="80" fill="white" font-size="8" transform="rotate(-90 45,80)" text-anchor="middle">מערבי</text><rect x="140" y="30" width="30" height="100" stroke="blue" fill="none" stroke-width="2"/><text x="155" y="80" fill="white" font-size="8" transform="rotate(90 155,80)" text-anchor="middle">מזרחי</text></svg>`,
+        "בלומפילד": `<svg viewBox="0 0 200 160" class="stadium-svg"><rect x="55" y="55" width="90" height="50" fill="#065f46"/><rect x="55" y="25" width="90" height="30" stroke="orange" fill="none" stroke-width="2"/><text x="100" y="45" fill="white" font-size="8" text-anchor="middle">צפוני</text><rect x="55" y="105" width="90" height="30" stroke="white" fill="none" stroke-width="2"/><text x="100" y="125" fill="white" font-size="8" text-anchor="middle">דרומי</text><rect x="25" y="25" width="30" height="110" stroke="red" fill="none" stroke-width="2"/><text x="42" y="80" fill="white" font-size="8" transform="rotate(-90 42,80)" text-anchor="middle">מערבי</text><rect x="145" y="25" width="30" height="110" stroke="blue" fill="none" stroke-width="2"/><text x="162" y="80" fill="white" font-size="8" transform="rotate(90 162,80)" text-anchor="middle">מזרחי</text></svg>`
     };
 
     function renderList() {
@@ -257,6 +154,8 @@
         });
         document.getElementById('overlay').style.display = 'flex';
     }
+
+    function openContact() { document.getElementById('contact-overlay').style.display = 'flex'; }
 
     stadiums.forEach(s => { L.marker(s.coords).addTo(map).on('click', () => openPopup(s)); });
     renderList();
